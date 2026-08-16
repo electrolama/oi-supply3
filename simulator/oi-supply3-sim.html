@@ -1,0 +1,509 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OI Supply 3 Front-Panel Simulator</title>
+  <style>
+  #op4-strip {
+    color-scheme: light dark;
+    --op4-face: light-dark(#d2d4d3, #484c4e);
+    --op4-face-hi: light-dark(#f2f3f2, #777c7d);
+    --op4-edge: light-dark(#969b9c, #252829);
+    --op4-divider: light-dark(#899092, #777d7f);
+    --op4-ink: light-dark(#292d2f, #eef0ef);
+    --op4-ink-soft: light-dark(#62696b, #b5bbbc);
+    --op4-black: #101314;
+    --op4-screen: #06110e;
+    --op4-screen-edge: #1d2422;
+    --op4-screen-text: #e1fff5;
+    --op4-screen-soft: #76998c;
+    --op4-green: #42f29f;
+    --op4-blue: #45aef4;
+    --op4-red: #ef4d4d;
+    --op4-yellow: #ffe45c;
+    --op4-post-red: #b52e2e;
+    --op4-post-black: #141617;
+    color: var(--op4-ink);
+    font-family: Inter, "Segoe UI", sans-serif;
+    width: 100%;
+  }
+  #op4-strip * { box-sizing: border-box; }
+  #op4-strip .op4-front {
+    background:
+      linear-gradient(100deg, transparent 0 18%, color-mix(in srgb, var(--op4-face-hi) 12%, transparent) 18.5%, transparent 19% 50%, color-mix(in srgb, var(--op4-face-hi) 10%, transparent) 50.5%, transparent 51%),
+      var(--op4-face);
+    border: 1px solid var(--op4-edge);
+    border-radius: 10px;
+    box-shadow: inset 0 1px 0 color-mix(in srgb, var(--op4-face-hi) 65%, transparent), 0 12px 28px #0004;
+    min-width: 0;
+    padding: 18px 18px 14px;
+  }
+  #op4-strip .op4-heading {
+    align-items: baseline;
+    display: flex;
+    justify-content: space-between;
+    letter-spacing: .08em;
+    margin-bottom: 18px;
+    text-transform: uppercase;
+  }
+  #op4-strip .op4-heading strong { font-weight: 500; }
+  #op4-strip .op4-heading span { color: var(--op4-ink-soft); font-size: 11px; }
+  #op4-strip .op4-layout {
+    align-items: center;
+    display: grid;
+    gap: 16px;
+    grid-template-columns: minmax(0, 1fr) 108px;
+  }
+  #op4-strip .op4-bank {
+    display: grid;
+    gap: 18px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    min-width: 0;
+  }
+  #op4-strip .op4-station {
+    align-items: center;
+    display: grid;
+    gap: 10px 8px;
+    grid-template-columns: 32px minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    min-width: 0;
+    position: relative;
+  }
+  #op4-strip .op4-station::before {
+    border: 1px solid color-mix(in srgb, var(--op4-divider) 68%, transparent);
+    border-radius: 6px;
+    box-shadow: inset 0 1px 0 color-mix(in srgb, var(--op4-face-hi) 42%, transparent), 0 1px 0 color-mix(in srgb, var(--op4-face-hi) 34%, transparent);
+    content: "";
+    inset: -8px -6px -12px;
+    pointer-events: none;
+    position: absolute;
+  }
+  #op4-strip .op4-station::after {
+    background: var(--op4-face);
+    color: var(--op4-ink-soft);
+    content: attr(data-output-label);
+    font-size: 9px;
+    left: 42px;
+    letter-spacing: .12em;
+    padding: 0 4px;
+    position: absolute;
+    text-transform: uppercase;
+    top: -13px;
+  }
+  #op4-strip .op4-led-button {
+    align-self: center;
+    appearance: none;
+    background: var(--op4-black);
+    border: 4px solid #202425;
+    border-radius: 50%;
+    box-shadow: inset 0 0 0 3px #050606, 0 2px 4px #0007;
+    cursor: pointer;
+    grid-column: 1;
+    grid-row: 1 / 3;
+    height: 30px;
+    padding: 0;
+    position: relative;
+    width: 30px;
+  }
+  #op4-strip .op4-led-button::before {
+    background: #2d3433;
+    border-radius: 50%;
+    content: "";
+    inset: -3px;
+    opacity: .75;
+    position: absolute;
+  }
+  #op4-strip .op4-led-button::after {
+    background: var(--op4-black);
+    border: 1px solid #2a2e2f;
+    border-radius: 50%;
+    box-shadow: inset 1px 2px 3px #ffffff0c;
+    content: "";
+    inset: 5px;
+    position: absolute;
+  }
+  #op4-strip .op4-led-button.is-off::before {
+    background: #2d3433;
+    box-shadow: none;
+  }
+  #op4-strip .op4-led-button.is-cv::before {
+    background: var(--op4-green);
+    box-shadow: 0 0 9px color-mix(in srgb, var(--op4-green) 78%, transparent);
+  }
+  #op4-strip .op4-led-button.is-cc::before {
+    background: #ffc14f;
+    box-shadow: 0 0 9px color-mix(in srgb, #ffc14f 78%, transparent);
+  }
+  #op4-strip .op4-led-button.is-err::before {
+    animation: op4-error-blink 1s steps(1, end) infinite;
+    background: var(--op4-yellow);
+    box-shadow: 0 0 10px color-mix(in srgb, var(--op4-yellow) 82%, transparent);
+  }
+  #op4-strip .op4-display-board {
+    background: #174a5b;
+    border: 1px solid #286b7f;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px #0005;
+    grid-column: 2;
+    min-width: 0;
+    padding: 4px;
+  }
+  #op4-strip .op4-display {
+    aspect-ratio: 2 / 1;
+    background: radial-gradient(circle at 50% 30%, #0c211b, var(--op4-screen) 72%);
+    border: 1px solid var(--op4-screen-edge);
+    box-shadow: inset 0 0 7px #000;
+    display: block;
+    overflow: hidden;
+    width: 100%;
+  }
+  #op4-strip .op4-lcd { shape-rendering: geometricPrecision; text-rendering: geometricPrecision; }
+  #op4-strip .op4-lcd text { font-family: "Segoe UI", monospace; }
+  #op4-strip .op4-lcd .lcd-bg { fill: var(--op4-screen); }
+  #op4-strip .op4-lcd .lcd-glow { fill: #0b1f19; }
+  #op4-strip .op4-lcd .lcd-divider { stroke: #18382f; stroke-width: 1; }
+  #op4-strip .op4-lcd .lcd-selection { fill: var(--op4-blue); }
+  #op4-strip .op4-lcd .lcd-selection.is-empty { fill: #173129; }
+  #op4-strip .op4-lcd .lcd-main { fill: var(--op4-screen-text); font-size: 28px; font-weight: 500; }
+  #op4-strip .op4-lcd .lcd-main.is-editing { fill: var(--op4-blue); }
+  #op4-strip .op4-lcd .lcd-unit { fill: var(--op4-screen-soft); font-size: 12px; font-weight: 500; }
+  #op4-strip .op4-lcd .lcd-status rect { stroke-width: .8; }
+  #op4-strip .op4-lcd .lcd-status text { font-size: 12px; font-weight: 500; }
+  #op4-strip .op4-lcd .lcd-status.lcd-cv rect { fill: #0b5038; stroke: var(--op4-green); }
+  #op4-strip .op4-lcd .lcd-status.lcd-cv text { fill: var(--op4-green); }
+  #op4-strip .op4-lcd .lcd-status.lcd-cc rect { fill: #503b0b; stroke: #ffc14f; }
+  #op4-strip .op4-lcd .lcd-status.lcd-cc text { fill: #ffd275; }
+  #op4-strip .op4-lcd .lcd-status.lcd-err { animation: op4-error-blink 1s steps(1, end) infinite; }
+  #op4-strip .op4-lcd .lcd-status.lcd-err rect { fill: #514500; stroke: var(--op4-yellow); }
+  #op4-strip .op4-lcd .lcd-status.lcd-err text { fill: #fff4a8; }
+  #op4-strip .op4-lcd .lcd-status.lcd-off rect { fill: #26302d; stroke: #d7ddda; }
+  #op4-strip .op4-lcd .lcd-status.lcd-off text { fill: #f2f5f3; }
+  @keyframes op4-error-blink {
+    0%, 49% { opacity: 1; }
+    50%, 100% { opacity: .22; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    #op4-strip .op4-led-button.is-err::before,
+    #op4-strip .op4-lcd .lcd-status.lcd-err { animation: none; }
+  }
+  #op4-strip .op4-posts {
+    align-items: center;
+    display: flex;
+    gap: 13px;
+    grid-column: 2;
+    justify-content: center;
+    min-height: 32px;
+  }
+  #op4-strip .op4-post {
+    border: 3px solid color-mix(in srgb, currentColor 72%, #000);
+    border-radius: 50%;
+    box-shadow: inset 0 0 0 3px color-mix(in srgb, currentColor 74%, #fff), 0 2px 3px #0007;
+    color: var(--op4-post-black);
+    height: 23px;
+    position: relative;
+    width: 23px;
+  }
+  #op4-strip .op4-post::after {
+    color: var(--op4-ink-soft);
+    content: attr(data-polarity);
+    font-family: "Segoe UI", sans-serif;
+    font-size: 10px;
+    left: 50%;
+    position: absolute;
+    top: 25px;
+    transform: translateX(-50%);
+  }
+  #op4-strip .op4-post.is-positive { color: var(--op4-post-red); }
+  #op4-strip .op4-encoder-area {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    min-width: 0;
+  }
+  #op4-strip .op4-knob {
+    appearance: none;
+    background:
+      radial-gradient(circle at 48% 24%, #515659 0 7%, transparent 8%),
+      repeating-conic-gradient(from 0deg, #26292b 0 2deg, #383c3e 2deg 5deg);
+    border: 2px solid #191b1c;
+    border-radius: 50%;
+    box-shadow: inset 9px 9px 12px #6f74751f, inset -8px -9px 12px #0006, 0 7px 10px #0006;
+    cursor: pointer;
+    height: 78px;
+    padding: 0;
+    position: relative;
+    transform: rotate(var(--op4-angle, -32deg));
+    transition: transform 90ms ease-out;
+    width: 78px;
+  }
+  #op4-strip .op4-knob::after {
+    background: var(--op4-face-hi);
+    border-radius: 1px;
+    content: "";
+    height: 13px;
+    left: calc(50% - 1px);
+    opacity: .78;
+    position: absolute;
+    top: 8px;
+    width: 2px;
+  }
+  #op4-strip .op4-turns { display: flex; gap: 6px; }
+  #op4-strip .op4-turn {
+    appearance: none;
+    background: color-mix(in srgb, var(--op4-face) 72%, var(--op4-black));
+    border: 1px solid var(--op4-edge);
+    border-radius: 4px;
+    color: var(--op4-ink);
+    cursor: pointer;
+    font: inherit;
+    min-width: 36px;
+    padding: 4px 7px;
+  }
+  #op4-strip .op4-status {
+    color: var(--op4-ink-soft);
+    font-size: 11px;
+    letter-spacing: .03em;
+    margin-top: 8px;
+    min-height: 18px;
+    text-align: center;
+  }
+  @media (max-width: 760px) {
+    #op4-strip .op4-front { padding: 16px 12px 12px; }
+    #op4-strip .op4-layout { gap: 10px; grid-template-columns: minmax(0, 1fr) 92px; }
+    #op4-strip .op4-bank { gap: 14px; }
+    #op4-strip .op4-station { gap: 8px 5px; grid-template-columns: 28px minmax(0, 1fr); }
+    #op4-strip .op4-led-button { height: 27px; width: 27px; }
+    #op4-strip .op4-display { padding: 3px; }
+    #op4-strip .op4-knob { height: 68px; width: 68px; }
+  }
+  @media (max-width: 620px) {
+    #op4-strip .op4-front { padding-bottom: 24px; }
+    #op4-strip .op4-heading span { display: none; }
+    #op4-strip .op4-layout { grid-template-columns: minmax(0, 1fr) 82px; }
+    #op4-strip .op4-encoder-area { grid-column: 2; grid-row: 1; }
+    #op4-strip .op4-bank { gap: 18px; grid-template-columns: 1fr; }
+    #op4-strip .op4-station { grid-template-columns: 34px minmax(0, 1fr); }
+  }
+  @media (max-width: 360px) {
+    #op4-strip .op4-bank { gap: 10px; }
+    #op4-strip .op4-station { grid-template-columns: 28px minmax(0, 1fr); }
+    #op4-strip .op4-station::before { inset: -7px -3px -11px; }
+    #op4-strip .op4-station::after { left: 34px; }
+    #op4-strip .op4-posts { gap: 8px; }
+  }
+  </style>
+</head>
+<body>
+
+<div id="op4-strip">
+  <section class="op4-front" aria-label="Interactive OI Supply 3 physical front-panel simulator">
+    <div class="op4-heading">
+      <strong>OI Supply 3</strong>
+      <span>3 channels | 0.8–15.0 V | 20 W per channel</span>
+    </div>
+    <div class="op4-layout">
+      <div class="op4-bank" data-channels></div>
+      <div class="op4-encoder-area">
+        <button class="op4-knob" id="op4-strip-knob" type="button" aria-label="Encoder. Click to switch voltage or current and use the mouse wheel to adjust."></button>
+        <div class="op4-turns" aria-label="Rotate encoder">
+          <button class="op4-turn" type="button" data-turn="-1" aria-label="Turn counterclockwise">-</button>
+          <button class="op4-turn" type="button" data-turn="1" aria-label="Turn clockwise">+</button>
+        </div>
+      </div>
+    </div>
+  </section>
+  <div class="op4-status" id="op4-strip-status" aria-live="polite">Short press: select | encoder activity keeps selection | idle 3s: clear | hold 2s: power</div>
+</div>
+
+<script>
+(() => {
+  const root = document.getElementById('op4-strip');
+  const channels = [
+    { v: 5.000, limit: 1.000, load: 0.243, on: false },
+    { v: 3.300, limit: 0.500, load: 0.118, on: false },
+    { v: 12.00, limit: 0.600, load: 0.628, on: false }
+  ];
+  const SELECT_TIMEOUT_MS = 3000;
+  let selected = null;
+  let edit = 'v';
+  let angle = -32;
+  let activePress = null;
+  let selectionTimer = null;
+
+  const fmtV = value => value < 10 ? value.toFixed(3) : value.toFixed(2);
+  const fmtI = value => value.toFixed(3);
+  const stateOf = ch => ch.error ? 'ERR' : !ch.on ? 'OFF' : ch.load > ch.limit ? 'CC' : 'CV';
+  const actualOf = ch => {
+    if (!ch.on || ch.error) return { v: 0, i: 0 };
+    if (ch.load > ch.limit) return { v: ch.v * ch.limit / ch.load, i: ch.limit };
+    return { v: Math.max(0, ch.v - 0.002), i: ch.load };
+  };
+
+  function statusBadge(state) {
+    return `<g class="lcd-status lcd-${state.toLowerCase()}"><rect x="126" y="19" width="29" height="42" rx="3"/><text x="140.5" y="44" text-anchor="middle">${state}</text></g>`;
+  }
+
+  function station(index) {
+    const ch = channels[index];
+    const state = stateOf(ch);
+    const actual = actualOf(ch);
+    const selectedClass = index === selected ? ' is-selected' : '';
+    const stateClass = ` is-${state.toLowerCase()}`;
+    const showVSet = !ch.on || (index === selected && edit === 'v');
+    const showISet = !ch.on || (index === selected && edit === 'i');
+    const displayV = showVSet ? ch.v : actual.v;
+    const displayI = showISet ? ch.limit : actual.i;
+    const wrap = document.createElement('div');
+    wrap.className = 'op4-station';
+    wrap.dataset.outputLabel = `Output ${index + 1}`;
+    wrap.innerHTML = `
+      <button class="op4-led-button${stateClass}" type="button" data-output="${index}" aria-pressed="${ch.on}" aria-label="Output ${index + 1}: ${state}. Short press selects. Hold for two seconds to ${ch.on ? 'disable' : 'enable'}."></button>
+      <div class="op4-display-board">
+        <svg class="op4-display op4-lcd${selectedClass}" viewBox="0 0 160 80" role="img" aria-label="Channel ${index + 1}: ${showVSet ? 'voltage setpoint' : 'measured voltage'} ${fmtV(displayV)} volts, ${showISet ? 'current limit' : 'measured current'} ${fmtI(displayI)} amps, ${state}">
+          <rect class="lcd-bg" x="0" y="0" width="160" height="80"/>
+          <ellipse class="lcd-glow" cx="80" cy="34" rx="75" ry="42"/>
+          <rect class="lcd-selection${index === selected ? '' : ' is-empty'}" x="0" y="0" width="5" height="80"/>
+          ${statusBadge(state)}
+          <line class="lcd-divider" x1="122" y1="7" x2="122" y2="73"/>
+          <text class="lcd-main${index === selected && edit === 'v' ? ' is-editing' : ''}" x="9" y="34">${fmtV(displayV)}<tspan class="lcd-unit" dx="3">V</tspan></text>
+          <line class="lcd-divider" x1="7" y1="40" x2="119" y2="40"/>
+          <text class="lcd-main${index === selected && edit === 'i' ? ' is-editing' : ''}" x="9" y="72">${fmtI(displayI)}<tspan class="lcd-unit" dx="3">A</tspan></text>
+        </svg>
+      </div>
+      <div class="op4-posts" aria-label="Output ${index + 1} two millimetre banana terminals">
+        <span class="op4-post is-positive" data-polarity="+"></span><span class="op4-post" data-polarity="-"></span>
+      </div>`;
+    return wrap;
+  }
+
+  function render() {
+    root.querySelector('[data-channels]').replaceChildren(...channels.map((_, index) => station(index)));
+    root.querySelector('#op4-strip-knob').style.setProperty('--op4-angle', `${angle}deg`);
+  }
+
+  function message(text) {
+    root.querySelector('#op4-strip-status').textContent = text;
+  }
+
+  function clearSelectionTimer() {
+    if (selectionTimer) window.clearTimeout(selectionTimer);
+    selectionTimer = null;
+  }
+
+  function armSelectionTimeout() {
+    clearSelectionTimer();
+    if (selected === null) return;
+    selectionTimer = window.setTimeout(() => {
+      selectionTimer = null;
+      selected = null;
+      message('Selection cleared | short press an output to edit');
+      render();
+    }, SELECT_TIMEOUT_MS);
+  }
+
+  function adjust(direction) {
+    if (selected === null) {
+      message('Select an output first');
+      return;
+    }
+    const ch = channels[selected];
+    if (edit === 'v') ch.v = Math.max(0.8, Math.min(15, ch.v + direction * 0.1));
+    else ch.limit = Math.max(0, Math.min(5, ch.limit + direction * 0.05));
+    angle += direction * 12;
+    message(`CH ${selected + 1} | ${edit === 'v' ? fmtV(ch.v) + ' V set' : fmtI(ch.limit) + ' A limit'}`);
+    armSelectionTimeout();
+    render();
+  }
+
+  root.addEventListener('click', event => {
+    const turn = event.target.closest('.op4-turn');
+    if (turn) adjust(Number(turn.dataset.turn));
+  });
+
+  function startOutputPress(button) {
+    if (activePress) return;
+    const index = Number(button.dataset.output);
+    if (selected === index) clearSelectionTimer();
+    const press = { button, index, longFired: false, timer: null };
+    press.timer = window.setTimeout(() => {
+      press.longFired = true;
+      channels[index].on = !channels[index].on;
+      if (selected === index) armSelectionTimeout();
+      message(`Output ${index + 1} ${channels[index].on ? 'enabled' : 'disabled'}`);
+      render();
+    }, 2000);
+    activePress = press;
+    message(`Output ${index + 1} | release to select, keep holding for power`);
+  }
+
+  function finishOutputPress() {
+    if (!activePress) return;
+    const press = activePress;
+    window.clearTimeout(press.timer);
+    activePress = null;
+    if (!press.longFired) {
+      selected = press.index;
+      armSelectionTimeout();
+      message(`Channel ${press.index + 1} selected`);
+      render();
+    } else if (selected === press.index) {
+      armSelectionTimeout();
+    }
+  }
+
+  function cancelOutputPress() {
+    if (!activePress) return;
+    const press = activePress;
+    window.clearTimeout(press.timer);
+    activePress = null;
+    if (selected === press.index) armSelectionTimeout();
+  }
+
+  root.addEventListener('pointerdown', event => {
+    const output = event.target.closest('.op4-led-button');
+    if (!output) return;
+    event.preventDefault();
+    output.setPointerCapture(event.pointerId);
+    startOutputPress(output);
+  });
+  root.addEventListener('pointerup', event => {
+    if (!event.target.closest('.op4-led-button') && !activePress) return;
+    finishOutputPress();
+  });
+  root.addEventListener('pointercancel', cancelOutputPress);
+  root.addEventListener('keydown', event => {
+    const output = event.target.closest('.op4-led-button');
+    if (!output || (event.key !== ' ' && event.key !== 'Enter') || event.repeat) return;
+    event.preventDefault();
+    startOutputPress(output);
+  });
+  root.addEventListener('keyup', event => {
+    const output = event.target.closest('.op4-led-button');
+    if (!output || (event.key !== ' ' && event.key !== 'Enter')) return;
+    event.preventDefault();
+    finishOutputPress();
+  });
+
+  const knob = root.querySelector('#op4-strip-knob');
+  knob.addEventListener('click', () => {
+    if (selected === null) {
+      message('Select an output first');
+      return;
+    }
+    edit = edit === 'v' ? 'i' : 'v';
+    message(`CH ${selected + 1} | adjusting ${edit === 'v' ? 'voltage' : 'current limit'}`);
+    armSelectionTimeout();
+    render();
+  });
+  knob.addEventListener('wheel', event => {
+    event.preventDefault();
+    adjust(event.deltaY < 0 ? 1 : -1);
+  }, { passive: false });
+
+  render();
+})();
+</script>
+</body>
+</html>

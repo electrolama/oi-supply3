@@ -1,0 +1,27 @@
+SPDX-FileCopyrightText: 2026 Omer Kilic <omer@electrolama.com>
+SPDX-License-Identifier: Apache-2.0
+
+OI Supply 3 licensing
+=====================
+
+This repository contains materials under different licensing terms:
+
+1. Documentation
+
+   README.md, docs/*.md, this licensing summary, and other Markdown
+   documentation are licensed under the Apache License 2.0
+   (SPDX identifier: Apache-2.0).
+
+   Full terms: LICENSES/Apache-2.0.txt
+
+2. Hardware source
+
+   Schematics, PCB design files, mechanical CAD, manufacturing files, and
+   other source material required to make or modify the hardware are licensed
+   under the CERN Open Hardware Licence Version 2 — Weakly Reciprocal
+   (SPDX identifier: CERN-OHL-W-2.0), unless a file states otherwise.
+
+   Full terms: LICENSES/CERN-OHL-W-2.0.txt
+
+The Open Instrument Project name, logos, and other branding are not granted
+under the licences above.
